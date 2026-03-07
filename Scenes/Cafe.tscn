@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3 uid="uid://dujucti6q2a04"]
+
+[ext_resource type="Texture2D" uid="uid://cnyfo0w7th54d" path="res://icon.svg" id="1_1tv80"]
+[ext_resource type="Script" uid="uid://cc22bja7rdkdx" path="res://Scripts/cafe_manager.gd" id="1_wmvcl"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1tv80"]
+albedo_color = Color(1, 0, 0, 1)
+
+[node name="Cafe" type="Node3D"]
+script = ExtResource("1_wmvcl")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 10)
+
+[node name="Floor" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(20, 1, 5)
+
+[node name="Player" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+material_override = SubResource("StandardMaterial3D_1tv80")
+texture = ExtResource("1_1tv80")
+
+[node name="PhaseTimer" type="Timer" parent="."]
+one_shot = true
