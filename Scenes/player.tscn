@@ -14,3 +14,9 @@ texture = ExtResource("2_6t5aa")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("BoxShape3D_v0iea")
+
+[node name="RunTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[connection signal="timeout" from="RunTimer" to="." method="_on_run_timer_timeout"]

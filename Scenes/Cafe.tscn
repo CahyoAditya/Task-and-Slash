@@ -19,6 +19,7 @@ size = Vector3(20, 1, 5)
 [node name="Player" type="Sprite3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 material_override = SubResource("StandardMaterial3D_1tv80")
+billboard = 2
 texture = ExtResource("1_1tv80")
 
 [node name="PhaseTimer" type="Timer" parent="."]
