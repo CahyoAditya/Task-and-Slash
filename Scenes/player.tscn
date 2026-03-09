@@ -1,14 +1,17 @@
-[gd_scene load_steps=4 format=3 uid="uid://dovwvergifxi0"]
+[gd_scene load_steps=5 format=3 uid="uid://dovwvergifxi0"]
 
 [ext_resource type="Script" uid="uid://dmabl7yrunakk" path="res://Scripts/player.gd" id="1_cvnsp"]
 [ext_resource type="Texture2D" uid="uid://cnyfo0w7th54d" path="res://icon.svg" id="2_6t5aa"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_v0iea"]
 
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_cvnsp"]
+
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("1_cvnsp")
 
 [node name="Sprite3D" type="Sprite3D" parent="."]
+cast_shadow = 2
 billboard = 2
 texture = ExtResource("2_6t5aa")
 
@@ -19,4 +22,7 @@ shape = SubResource("BoxShape3D_v0iea")
 wait_time = 0.5
 one_shot = true
 
-[connection signal="timeout" from="RunTimer" to="." method="_on_run_timer_timeout"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.2, 0, 0, 0, 0.6425831, 0, 0, 0, 1.2, 0, 0, 0)
+cast_shadow = 3
+mesh = SubResource("CapsuleMesh_cvnsp")

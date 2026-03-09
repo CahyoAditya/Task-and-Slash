@@ -7,7 +7,7 @@ enum GameState {
 }
 
 @export var speed: float = 6.0
-#@export var jump_velocity: float = 5.0
+@export var jump_velocity: float = 10.0
 @export var transition: float = 0.5
 
 # Gravity default of godot
@@ -31,7 +31,7 @@ func change_state(new_state: GameState) -> void:
 			speed = 6.0
 		GameState.DASH:
 			print("DASH")
-			speed = 30.0
+			speed = 20.0
 		GameState.RUN:
 			print("RUN")
 			speed = 10.0
@@ -39,13 +39,13 @@ func change_state(new_state: GameState) -> void:
 
 func _physics_process(delta: float) -> void:
 	## If you want jump mechanics
-	#if Input.is_action_just_pressed("ui_accept") and is_on_floor():
-		#velocity.y = jump_velocity
+	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
+		velocity.y = jump_velocity
 
 	# Dash & Run state
 	if Input.is_action_just_pressed("sprint"):
 		change_state(GameState.DASH)
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(transition/1.5).timeout
 		change_state(GameState.RUN)
 
 	if not is_on_floor():
