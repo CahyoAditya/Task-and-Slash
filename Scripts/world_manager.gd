@@ -8,6 +8,7 @@ enum GameState {
 
 var current_state: GameState = GameState.ACTION
 @onready var phase_timer: Timer = $PhaseTimer
+@onready var timer_text: RichTextLabel = $TimerText
 @export var action_duration: float = 5 * 60
 
 func _ready() -> void:
@@ -32,3 +33,6 @@ func _on_phase_timer_timeout() -> void:
 	match current_state:
 		GameState.ACTION:
 			change_state(GameState.FOCUS)
+
+func _process(delta: float) -> void:
+	timer_text.text = str("%.2f" % phase_timer.time_left)

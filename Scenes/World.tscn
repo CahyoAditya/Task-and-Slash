@@ -24,3 +24,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.702414, -0.3846306, -0.59889394, -0.1666785, -0.90690756, 0.3869586, -0.6919775, -0.17198235, -0.7011341, 0, 0, 0)
 shadow_enabled = true
+
+[node name="TimerText" type="RichTextLabel" parent="."]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 80.0
+offset_bottom = 40.0
+grow_horizontal = 2
+scale = Vector2(2, 2)
+text = "0"

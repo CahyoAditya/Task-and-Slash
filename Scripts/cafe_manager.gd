@@ -10,6 +10,7 @@ var current_state: GameState = GameState.FOCUS
 
 @onready var phase_timer: Timer = $PhaseTimer
 @onready var player: Sprite3D = $Player
+@onready var timer_text: RichTextLabel = $TimerText
 
 @export var focus_duration: float = 20 * 60
 
@@ -29,7 +30,7 @@ func change_state(new_state: GameState) -> void:
 			
 		GameState.READY:
 			print("Press Spacebar")
-			player.modulate = Color.GOLDENROD
+			player.modulate = Color.YELLOW_GREEN
 			phase_timer.stop()
 			
 		GameState.ACTION:
@@ -52,3 +53,6 @@ func _on_phase_timer_timeout() -> void:
 			
 		#GameState.ACTION:
 			#change_state(GameState.FOCUS)
+
+func _process(delta: float) -> void:
+	timer_text.text = str("%.2f" % phase_timer.time_left)

@@ -26,3 +26,16 @@ one_shot = true
 transform = Transform3D(1.2, 0, 0, 0, 0.6425831, 0, 0, 0, 1.2, 0, 0, 0)
 cast_shadow = 3
 mesh = SubResource("CapsuleMesh_cvnsp")
+
+[node name="AttackCollisionShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0)
+shape = SubResource("BoxShape3D_v0iea")
+
+[node name="Sprite3D" type="Sprite3D" parent="AttackCollisionShape"]
+transform = Transform3D(1, 0, 0, 0, 0.6, 0, 0, 0, 1, 0, 0, 0)
+visible = false
+texture = ExtResource("2_6t5aa")
+
+[node name="SprAttTimer" type="Timer" parent="AttackCollisionShape"]
+wait_time = 0.2
+one_shot = true
