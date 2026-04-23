@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/attack_flash.gd" id="1_flash"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_1"]
+radius = 0.55
+height = 1.1
+
+[sub_resource type="StandardMaterial3D" id="Material_flash"]
+transparency = 1
+albedo_color = Color(1, 0.95, 0.2, 0.7)
+emission_enabled = true
+emission = Color(2.0, 1.6, 0.1, 1)
+emission_energy_multiplier = 3.0
+
+[node name="AttackFlash" type="Node3D"]
+script = ExtResource("1_flash")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+mesh = SubResource("SphereMesh_1")
+surface_material_override/0 = SubResource("Material_flash")

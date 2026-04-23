@@ -11,9 +11,15 @@ config_version=5
 [application]
 
 config/name="Task and Slash"
-run/main_scene="uid://dujucti6q2a04"
+run/main_scene="res://Scenes/MainMenu.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameManager="*res://Scripts/game_manager.gd"
+AudioManager="*res://Scripts/audio_manager.gd"
+SceneTransition="*res://Scripts/scene_transition.gd"
 
 [input]
 
