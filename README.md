@@ -120,18 +120,31 @@ Task-and-Slash/
 
 - **Engine**: [Godot 4.5](https://godotengine.org/)
 - **Bahasa**: GDScript
-- **Platform Target**: PC (Windows / Linux / macOS)
+- **Platform Target**: Web (Browser) — dimainkan langsung di [itch.io](https://itch.io)
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🚀 Cara Memainkan
+
+### 🌐 Versi Web (Itch.io)
+
+> **Main langsung di browser — tidak perlu install apapun.**
+>
+> 🔗 **[Klik di sini untuk memainkan di itch.io](https://p-esc.itch.io/task-and-slash)**
+
+Rekomendasi browser: Chrome / Firefox versi terbaru.
+
+### 🛠️ Menjalankan dari Source Code
 
 1. Clone repo ini
-2. Buka Godot 4.5+
+2. Buka [Godot 4.5+](https://godotengine.org/download)
 3. Import proyek dari folder root
 4. Jalankan scene `res://Scenes/MainMenu.tscn`
 
-Atau unduh binary dari halaman [Releases](../../releases).
+Untuk export ke Web:
+```
+Project → Export → Web (HTML5) → Export Project
+```
 
 ---
 
