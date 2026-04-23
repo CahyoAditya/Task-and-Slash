@@ -1,3 +1,4 @@
+This is a Prototype. That means all of it created using AI.
 # Task & Slash
 
 > **Pomodoro × Hack & Slash** — Produktif sambil bertarung.
