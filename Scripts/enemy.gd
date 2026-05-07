@@ -7,9 +7,9 @@ extends CharacterBody3D
 signal enemy_died(enemy: Node)
 signal health_changed(current: int, maximum: int)
 
-const DAMAGE_NUMBER_SCENE := "res://Scenes/damage_number.tscn"
-const ATTACK_FLASH_SCENE  := "res://Scenes/attack_flash.tscn"
-const DEATH_BURST_SCENE   := "res://Scenes/death_burst.tscn"
+const _DN_SCENE    := preload("res://Scenes/damage_number.tscn")
+const _FLASH_SCENE := preload("res://Scenes/attack_flash.tscn")
+const _BURST_SCENE := preload("res://Scenes/death_burst.tscn")
 
 ## Warna burst saat mati (merah untuk melee)
 const BURST_COLOR := Color(1.0, 0.25, 0.15, 1.0)
@@ -32,10 +32,8 @@ var _charge_countdown: float = 0.0
 var _is_staggered: bool = false
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") as float
 
-var _damage_number_scene: PackedScene
-var _attack_flash_scene: PackedScene
-var _burst_scene: PackedScene
-var _hit_mat: StandardMaterial3D = null
+static var _hit_mat: StandardMaterial3D  ## Dibagi semua instance enemy — dibuat sekali
+var _active_flash: Node3D = null  ## Referensi ke flash node yang sedang aktif
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 
@@ -45,14 +43,12 @@ func _ready() -> void:
 	add_to_group("enemy")
 	collision_layer = 2
 	collision_mask = 1
-	_damage_number_scene = load(DAMAGE_NUMBER_SCENE)
-	_attack_flash_scene  = load(ATTACK_FLASH_SCENE)
-	_burst_scene         = load(DEATH_BURST_SCENE)
 	# Pre-bake material hit flash agar tidak realokasi tiap frame
-	_hit_mat = StandardMaterial3D.new()
-	_hit_mat.albedo_color = Color(2.5, 2.5, 2.5, 1.0)
-	_hit_mat.emission_enabled = true
-	_hit_mat.emission = Color.WHITE
+	if _hit_mat == null:
+		_hit_mat = StandardMaterial3D.new()
+		_hit_mat.albedo_color = Color(2.5, 2.5, 2.5, 1.0)
+		_hit_mat.emission_enabled = true
+		_hit_mat.emission = Color.WHITE
 	_target = get_tree().get_first_node_in_group("player")
 
 
@@ -112,27 +108,46 @@ func _start_charge() -> void:
 	is_charging = true
 	_charge_countdown = charge_time
 	# Spawn attack flash sebagai child
-	if _attack_flash_scene:
-		var flash: Node3D = _attack_flash_scene.instantiate()
+	if _FLASH_SCENE:
+		var flash: Node3D = _FLASH_SCENE.instantiate()
 		add_child(flash)
 		flash.start(charge_time)
+		_active_flash = flash
+
+
+## Batalkan charge: hapus flash, reset cooldown. Bisa dipanggil dari luar (parry).
+func interrupt_charge() -> void:
+	if _active_flash and is_instance_valid(_active_flash):
+		_active_flash.queue_free()
+		_active_flash = null
+	if is_charging:
+		is_charging = false
+		_attack_timer = attack_cooldown  # Paksa cooldown penuh seolah serangan sudah dipakai
 
 
 func _do_attack() -> void:
-	if _target and _target.has_method("take_damage"):
+	if _target == null or not is_instance_valid(_target):
+		return
+	# Cek jarak saat charge berakhir — player mungkin sudah menjauh
+	var dist: float = absf(global_position.x - _target.global_position.x)
+	if dist > attack_range * 1.5:
+		return
+	if _target.has_method("take_damage"):
 		_target.take_damage(damage, self)
 
 
 ## Dipanggil saat player menyerang enemy (hitbox overlap)
 func take_damage(amount: int) -> void:
+	if health <= 0:
+		return  # Sudah mati — cegah double-die dari AoE di frame yang sama
 	health -= amount
 	health_changed.emit(health, max_health)
 	_is_staggered = true
-	is_charging = false  # Interrupt charge jika kena hit
+	interrupt_charge()  # Hapus flash + reset cooldown jika sedang charging
 	get_tree().create_timer(0.15).timeout.connect(
 		func() -> void: _is_staggered = false, CONNECT_ONE_SHOT)
-	if _damage_number_scene:
-		var dn: Node3D = _damage_number_scene.instantiate()
+	if _DN_SCENE:
+		var dn: Node3D = _DN_SCENE.instantiate()
 		get_tree().current_scene.add_child(dn)
 		dn.show_at(amount, global_position)
 	# Hit flash: berkedip putih singkat
@@ -153,8 +168,8 @@ func take_damage(amount: int) -> void:
 
 func _die() -> void:
 	# Spawn death burst
-	if _burst_scene:
-		var burst: Node3D = _burst_scene.instantiate()
+	if _BURST_SCENE:
+		var burst: Node3D = _BURST_SCENE.instantiate()
 		get_tree().current_scene.add_child(burst)
 		burst.global_position = global_position
 		burst.start(BURST_COLOR)

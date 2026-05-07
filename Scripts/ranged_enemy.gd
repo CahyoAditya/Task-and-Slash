@@ -4,10 +4,10 @@ extends CharacterBody3D
 
 signal enemy_died(enemy: Node)
 
-const PROJECTILE_SCENE    := "res://Scenes/projectile.tscn"
-const DAMAGE_NUMBER_SCENE := "res://Scenes/damage_number.tscn"
-const ATTACK_FLASH_SCENE  := "res://Scenes/attack_flash.tscn"
-const DEATH_BURST_SCENE   := "res://Scenes/death_burst.tscn"
+const _DN_SCENE    := preload("res://Scenes/damage_number.tscn")
+const _FLASH_SCENE := preload("res://Scenes/attack_flash.tscn")
+const _BURST_SCENE := preload("res://Scenes/death_burst.tscn")
+const _PROJ_SCENE  := preload("res://Scenes/projectile.tscn")
 
 const BURST_COLOR := Color(0.1, 0.3, 1.0, 1.0)
 
@@ -26,11 +26,8 @@ var _charge_countdown: float = 0.0
 var _is_staggered: bool = false
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") as float
 
-var _projectile_scene: PackedScene
-var _damage_number_scene: PackedScene
-var _attack_flash_scene: PackedScene
-var _burst_scene: PackedScene
-var _hit_mat: StandardMaterial3D = null
+static var _hit_mat: StandardMaterial3D  ## Dibagi semua instance enemy — dibuat sekali
+var _active_flash: Node3D = null  ## Referensi ke flash node yang sedang aktif
 
 @onready var mesh_instance: MeshInstance3D = $MeshInstance3D
 
@@ -40,14 +37,11 @@ func _ready() -> void:
 	add_to_group("enemy")
 	collision_layer = 2
 	collision_mask = 1
-	_projectile_scene     = load(PROJECTILE_SCENE)
-	_damage_number_scene  = load(DAMAGE_NUMBER_SCENE)
-	_attack_flash_scene   = load(ATTACK_FLASH_SCENE)
-	_burst_scene          = load(DEATH_BURST_SCENE)
-	_hit_mat = StandardMaterial3D.new()
-	_hit_mat.albedo_color = Color(2.5, 2.5, 2.5, 1.0)
-	_hit_mat.emission_enabled = true
-	_hit_mat.emission = Color.WHITE
+	if _hit_mat == null:
+		_hit_mat = StandardMaterial3D.new()
+		_hit_mat.albedo_color = Color(2.5, 2.5, 2.5, 1.0)
+		_hit_mat.emission_enabled = true
+		_hit_mat.emission = Color.WHITE
 	_target = get_tree().get_first_node_in_group("player")
 
 
@@ -108,29 +102,44 @@ func _start_charge() -> void:
 		return
 	is_charging = true
 	_charge_countdown = charge_time
-	if _attack_flash_scene:
-		var flash: Node3D = _attack_flash_scene.instantiate()
+	if _FLASH_SCENE:
+		var flash: Node3D = _FLASH_SCENE.instantiate()
 		add_child(flash)
 		flash.start(charge_time)
+		_active_flash = flash
+
+
+## Batalkan charge: hapus flash, reset cooldown. Bisa dipanggil dari luar (parry).
+func interrupt_charge() -> void:
+	if _active_flash and is_instance_valid(_active_flash):
+		_active_flash.queue_free()
+		_active_flash = null
+	if is_charging:
+		is_charging = false
+		_fire_timer = fire_cooldown  # Paksa cooldown penuh seolah sudah tembak
 
 
 func _fire(dir_x: float) -> void:
-	if _projectile_scene == null:
+	if dir_x == 0.0:
+		dir_x = 1.0  # Default ke kanan jika sejajar
+	if _PROJ_SCENE == null:
 		return
-	var proj: Node3D = _projectile_scene.instantiate()
+	var proj: Node3D = _PROJ_SCENE.instantiate()
 	get_tree().current_scene.add_child(proj)
 	proj.global_position = global_position + Vector3(dir_x * 0.9, -0.2, 0.0)
 	proj.direction = dir_x
 
 
 func take_damage(amount: int) -> void:
+	if health <= 0:
+		return  # Sudah mati — cegah double-die dari AoE di frame yang sama
 	health -= amount
 	_is_staggered = true
-	is_charging = false  # Hit interrupts charge
+	interrupt_charge()  # Hapus flash + reset cooldown jika sedang charging
 	get_tree().create_timer(0.15).timeout.connect(
 		func() -> void: _is_staggered = false, CONNECT_ONE_SHOT)
-	if _damage_number_scene:
-		var dn: Node3D = _damage_number_scene.instantiate()
+	if _DN_SCENE:
+		var dn: Node3D = _DN_SCENE.instantiate()
 		get_tree().current_scene.add_child(dn)
 		dn.show_at(amount, global_position)
 	if mesh_instance and _hit_mat:
@@ -148,8 +157,8 @@ func take_damage(amount: int) -> void:
 
 
 func _die() -> void:
-	if _burst_scene:
-		var burst: Node3D = _burst_scene.instantiate()
+	if _BURST_SCENE:
+		var burst: Node3D = _BURST_SCENE.instantiate()
 		get_tree().current_scene.add_child(burst)
 		burst.global_position = global_position
 		burst.start(BURST_COLOR)

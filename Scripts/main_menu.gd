@@ -16,7 +16,17 @@ const COLOR_BTN_HOVER := Color(0.18, 0.18, 0.30, 1.0)
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_load_saved_settings()
+	GameManager.focus_duration = 10.0  ## TESTING — hapus/ganti ke 20.0*60.0 sebelum produksi
 	_build_ui()
+	_play_intro_animation()
+
+
+func _play_intro_animation() -> void:
+	# Mulai dari transparan, fade in ke opaque
+	modulate = Color(1.0, 1.0, 1.0, 0.0)
+	var tween := create_tween()
+	tween.tween_property(self, "modulate:a", 1.0, 0.6)\
+		.set_ease(Tween.EASE_OUT)
 
 
 ## Load durasi timer dari settings file agar konsisten setelah restart
@@ -81,6 +91,16 @@ func _build_ui() -> void:
 	info.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))
 	vbox.add_child(info)
 
+	# ── Stats dari sesi sebelumnya ───────────────────────────────────────────────
+	var stats_text := _get_stats_text()
+	if not stats_text.is_empty():
+		var stats_lbl := Label.new()
+		stats_lbl.text = stats_text
+		stats_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		stats_lbl.add_theme_font_size_override("font_size", 14)
+		stats_lbl.add_theme_color_override("font_color", Color(0.55, 0.75, 0.55, 1.0))
+		vbox.add_child(stats_lbl)
+
 	var spacer2 := Control.new()
 	spacer2.custom_minimum_size = Vector2(0.0, 28.0)
 	vbox.add_child(spacer2)
@@ -132,4 +152,15 @@ func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 
-
+func _get_stats_text() -> String:
+	var cfg := ConfigFile.new()
+	var parts: Array[String] = []
+	if cfg.load("user://settings.cfg") == OK:
+		var sessions: int = cfg.get_value("stats", "sessions_completed", 0)
+		if sessions > 0:
+			parts.append("🍅 %d sesi selesai" % sessions)
+	if cfg.load("user://stats.cfg") == OK:
+		var hs: int = cfg.get_value("stats", "highscore", 0)
+		if hs > 0:
+			parts.append("🏆 Highscore: %d" % hs)
+	return "  |  ".join(parts)

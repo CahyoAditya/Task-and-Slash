@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://Scripts/boss_enemy.gd" id="1_boss"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(1.2, 2.4, 1.2)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.6
+height = 2.4
+
+[sub_resource type="StandardMaterial3D" id="Material_1"]
+albedo_color = Color(0.5, 0.1, 0.8, 1)
+emission_enabled = true
+emission = Color(0.3, 0.0, 0.5, 1.0)
+emission_energy_multiplier = 0.4
+
+[node name="BossEnemy" type="CharacterBody3D"]
+script = ExtResource("1_boss")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_1")
+surface_material_override/0 = SubResource("Material_1")

@@ -181,13 +181,12 @@ func _load_values() -> void:
 
 
 func _on_back_pressed() -> void:
+	# Simpan pengaturan game (timer)
 	var cfg := ConfigFile.new()
-	# Muat dulu agar bagian lain (audio) tidak tertimpa
 	cfg.load(SETTINGS_PATH)
 	cfg.set_value(SECTION_GAME, "focus_minutes",  _focus_slider.value  if _focus_slider  else 20.0)
 	cfg.set_value(SECTION_GAME, "action_minutes", _action_slider.value if _action_slider else 5.0)
-	cfg.set_value("audio", "master", _master_slider.value if _master_slider else 1.0)
-	cfg.set_value("audio", "bgm",    _bgm_slider.value    if _bgm_slider    else 0.8)
-	cfg.set_value("audio", "sfx",    _sfx_slider.value    if _sfx_slider    else 1.0)
 	cfg.save(SETTINGS_PATH)
+	# Simpan pengaturan audio via AudioManager (single source of truth)
+	AudioManager.save_to_config()
 	SceneTransition.go_to("res://Scenes/MainMenu.tscn")

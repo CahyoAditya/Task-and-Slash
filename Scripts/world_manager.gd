@@ -8,15 +8,21 @@ extends Node3D
 const ENEMY_SCENE        := "res://Scenes/enemy.tscn"
 const RANGED_ENEMY_SCENE := "res://Scenes/ranged_enemy.tscn"
 const FAST_ENEMY_SCENE   := "res://Scenes/fast_enemy.tscn"
+const BOSS_ENEMY_SCENE   := "res://Scenes/boss_enemy.tscn"
+const STATS_PATH         := "user://stats.cfg"
+const HEAL_DROP_CHANCE   : float = 0.30   # 30% drop heal saat enemy mati
+const HEAL_AMOUNT        : int   = 15     # HP yang di-restore
 const SPAWN_RANGE        : float = 9.0
 
 var _enemy_scene: PackedScene
 var _ranged_enemy_scene: PackedScene
 var _fast_enemy_scene: PackedScene
+var _boss_enemy_scene: PackedScene
 var _enemies_alive: int = 0
 var _wave_number: int = 0
 var _total_kills: int = 0
 var _total_score: int = 0
+var _highscore: int = 0
 var _wave_clearing: bool = false  # Mencegah double-spawn saat banyak enemy mati sekaligus
 
 ## HUD
@@ -48,6 +54,8 @@ func _ready() -> void:
 	_enemy_scene = load(ENEMY_SCENE)
 	_ranged_enemy_scene = load(RANGED_ENEMY_SCENE)
 	_fast_enemy_scene   = load(FAST_ENEMY_SCENE)
+	_boss_enemy_scene = load(BOSS_ENEMY_SCENE)
+	_load_highscore()
 	_setup_hud()
 	_setup_pause_menu()
 	_setup_game_over()
@@ -87,8 +95,14 @@ func _on_state_changed(new_state: GameManager.GameState) -> void:
 
 func _spawn_wave() -> void:
 	_wave_number += 1
+	if _wave_label:
+		_wave_label.add_theme_color_override("font_color", C_CYAN)
+	# Boss wave setiap kelipatan 5
+	if _wave_number % 5 == 0:
+		_spawn_boss_wave()
+		return
 	var melee_count  : int = mini(1 + _wave_number, 5)
-	var ranged_count : int = _wave_number / 2
+	var ranged_count : int = _wave_number >> 1  # Bit shift = integer division by 2, tanpa warning
 	var fast_count   : int = maxi(_wave_number - 2, 0)  # Muncul mulai wave 3
 	_enemies_alive = melee_count + ranged_count + fast_count
 
@@ -102,6 +116,15 @@ func _spawn_wave() -> void:
 		_instantiate_enemy(_ranged_enemy_scene, positions[melee_count + i])
 	for i in fast_count:
 		_instantiate_enemy(_fast_enemy_scene, positions[melee_count + ranged_count + i])
+
+
+func _spawn_boss_wave() -> void:
+	_enemies_alive = 1
+	if _wave_label:
+		_wave_label.text = "⚠ BOSS  WAVE  %d" % _wave_number
+		_wave_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.0, 1.0))
+	var pos := Vector3(randf_range(-3.0, 3.0), 2.0, 0.0)
+	_instantiate_enemy(_boss_enemy_scene, pos)
 
 
 func _instantiate_enemy(scene: PackedScene, pos: Vector3) -> void:
@@ -136,6 +159,11 @@ func _on_enemy_died(e: Node) -> void:
 		if raw != null:
 			sv = raw as int
 	_total_score += sv
+	# Heal drop — 30% chance
+	if randf() < HEAL_DROP_CHANCE:
+		var player := get_tree().get_first_node_in_group("player")
+		if player and player.has_method("heal"):
+			player.call("heal", HEAL_AMOUNT)
 	if _kill_label:
 		_kill_label.text = "Kills: %d" % _total_kills
 	if _score_label:
@@ -441,11 +469,19 @@ func _setup_summary() -> void:
 	score_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3, 1.0))
 	vbox.add_child(score_lbl)
 
-	var sub := Label.new()
-	sub.text = "Kembali ke Cafe..."
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1.0))
-	vbox.add_child(sub)
+	var hs_lbl := Label.new()
+	hs_lbl.name = "HighscoreLabel"
+	hs_lbl.text = "Highscore: 0"
+	hs_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hs_lbl.add_theme_font_size_override("font_size", 22)
+	hs_lbl.add_theme_color_override("font_color", Color(0.9, 0.7, 0.2, 1.0))
+	vbox.add_child(hs_lbl)
+
+	var btn_cont := _make_btn("KEMBALI KE CAFE", C_CYAN)
+	btn_cont.name = "ContinueBtn"
+	btn_cont.process_mode = Node.PROCESS_MODE_ALWAYS
+	btn_cont.pressed.connect(func() -> void: SceneTransition.go_to("res://Scenes/Cafe.tscn"))
+	vbox.add_child(btn_cont)
 
 
 func _show_post_combat_summary() -> void:
@@ -474,11 +510,28 @@ func _show_post_combat_summary() -> void:
 	if wave_lbl:   wave_lbl.text   = "Wave tertinggi: %d"   % _wave_number
 	if score_lbl2: score_lbl2.text = "Skor: %d" % _total_score
 
-	_summary_ui.visible = true
+	var hs_lbl2 := _summary_ui.find_child("HighscoreLabel", true, false) as Label
+	if hs_lbl2:
+		hs_lbl2.text = "Highscore: %d" % _highscore
 
-	await get_tree().create_timer(4.0).timeout
-	if is_inside_tree():
-		SceneTransition.go_to("res://Scenes/Cafe.tscn")
+	_save_highscore()
+	_summary_ui.visible = true
+	# Tidak ada auto-close — player klik tombol Continue
+
+
+func _load_highscore() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(STATS_PATH) == OK:
+		_highscore = cfg.get_value("stats", "highscore", 0)
+
+
+func _save_highscore() -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(STATS_PATH)
+	if _total_score > _highscore:
+		_highscore = _total_score
+	cfg.set_value("stats", "highscore", _highscore)
+	cfg.save(STATS_PATH)
 
 
 ## Notifikasi singkat saat wave selesai
